@@ -101,38 +101,89 @@ async function register(req, res, next) {
 
 //  Role authorization check               FALTA PONERLE EL AWAI
 function roleAuthorization(role) {
-  return function(req, res, next) {
-    const user = req.user;
-
-    User.findById(user._id, function(err, foundUser) {
-      if (err) {
-        sendJSONresponse(res, 422, {
-          error: "No se encontro usuario"
-        });
-        return next(err);
-      }
-      //  If user is found, check role.
-      if (foundUser.role === role) {
-        return next();
-      }
-
-      sendJSONresponse(res, 401, {
-        error: "No estas autorizado a ver este contenido."
-      });
-      return next("Unauthorized");
-    });
-  };
-}
+  return async function(req, res, next) {
+  
+    try {
+      const user = req.user;
+      let foundedUser = await User.findById(user._id)
+        if(foundedUser){
+          if(foundedUser.role == role){
+            return next();
+          }else{
+                sendJSONresponse(res, 401, { error: "No estas autorizado a ver este contenido." });
+                return next("Unauthorized");            
+          }
+        }else{
+              sendJSONresponse(res, 422, {error: "No se encontro usuario"});          
+        }
+/*
+        User.findById(user._id, function(err, foundUser) {
+          if (err) {
+            sendJSONresponse(res, 422, {
+              error: "No se encontro usuario"
+            });
+            return next(err);
+          }
+          //  If user is found, check role.
+          if (foundUser.role === role) {
+            return next();
+          }
+    
+          sendJSONresponse(res, 401, {
+            error: "No estas autorizado a ver este contenido."
+          });
+          return next("Unauthorized");
+        });/// fundbyid intern funct 
+*/
+    } catch (error) {
+      return next(error);
+    }/// catch
+  };// return func
+}/// roleAuthorization func
 
 //  Forgot password Route
-function forgotPassword(req, res, next) {
-  const email = req.body.email;
+async function forgotPassword(req, res, next) {
 
-  User.findOne(
-    {
-      email: email
-    },
-    function(err, existingUser) {
+  try {
+    const email = req.body.email;
+    let foundedUser = await User.findOne({email: email})
+    if(foundedUser){
+          //  If user is found, generate and save resetToken
+          //  Generete a token with crypto
+          crypto.randomBytes(48, async function(err, buffer) {
+            const resetToken = buffer.toString("hex");
+            if (err) {
+              return next(err);
+            }
+            foundedUser.resetPasswordToken = resetToken;
+            foundedUser.resetPasswordExpires = Date.now() + 3600000; //  1 hour
+            /// then we save and update de user
+            let updatedUser = await User.findByIdAndUpdate(foundedUser._id, foundedUser, {new: true} ) // test if it can be like this or it need to be just saved
+            if(updatedUser){
+                            sendJSONresponse(res, 200,
+                            {
+                              message:
+                              "Por favor revisa tu email y sigue el link para poder recuperar tu contraseña"
+                            });
+                            next();
+            }else{
+                  sendJSONresponse(res, 304,
+                    {
+                      message:
+                      "Error al encontrar y actualizar la password del usuario"
+                    });
+                  next();
+            }
+        });/// crypto.randomBytes
+    }else{
+      sendJSONresponse(res, 422, { error: "No se encontro usuario" });
+    }
+  } catch (error) {
+    return next(error)
+  }
+/*
+  const email = req.body.email;
+  User.findOne({email: email}, function(err, existingUser) {
       //  If user is not found, return error
       if (err || existingUser == null) {
         sendJSONresponse(res, 422, {
@@ -174,20 +225,45 @@ function forgotPassword(req, res, next) {
           next();
         });
       });
-    }
-  );
-}
+    }/// findeone intern func
+  );// find one func
+*/
+} // forgotPassword func
 
 //  Reset password Route
-function verifyToken(req, res, next) {
-  User.findOne(
-    {
-      resetPasswordToken: req.params.token,
-      resetPasswordExpires: {
-        $gt: Date.now()
-      }
-    },
-    function(err, resetUser) {
+async function verifyToken(req, res, next) {
+   try {
+     let foundedUser = await User.findOne({resetPasswordToken: req.params.token,resetPasswordExpires: {$gt: Date.now()}})
+     if(foundedUser){
+          /// if it was founded save the new password and clear restToken from DB
+          foundedUser.password = req.body.password;
+          foundedUser.resetPasswordToken = undefined;
+          foundedUser.resetPasswordExpires = undefined;
+          let updatedUser = await User.findByIdAndUpdate(foundedUser._id, foundedUser, {new: true})
+          if(updatedUser){
+            res.status(200).json({
+              message:
+                "La password ha sido cambiada exitosamente. favor de logearse con la nueva Password"
+            });
+            next();
+          }else{
+            res.status(304).json({
+              Error:
+                "Error al cambiar la password (update)"
+            });
+          }
+     }else{
+       //  If query returned no results, token expires or was invalid. Return error.
+       res.status(422).json({
+        error:
+          "Tu token ha expirado. Porfavor de resetear la password nuevamente."
+      });
+     }
+   } catch (error) {
+      return next(error)     
+   }
+/*
+  User.findOne({resetPasswordToken: req.params.token,resetPasswordExpires: {$gt: Date.now()}  }, function(err, resetUser) {
       //  If query returned no results, token expires or was invalid. Return error.
       if (err) {
         sendJSONresponse(res, 500, err);
@@ -226,11 +302,14 @@ function verifyToken(req, res, next) {
             "Password changed succesfully. Please login with your new password"
         });
         next();
-      });
-    }
-  );
-}
-function facebookLogin(req, res, next) {
+      });/// save query
+    }/// functcion of query
+  );//finone 
+ */ 
+} // verifyToken
+
+
+async function facebookLogin(req, res, next) {
   const email = req.body.email;
   const firstName = req.body.firstName;
   const lastName = req.body.lastName;
@@ -255,11 +334,40 @@ function facebookLogin(req, res, next) {
     return;
   }
 
-  User.findOne(
-    {
-      facebookId: facebookId
-    },
-    (err, existingUser) => {
+  /// now lets check if the user already exists
+try {
+      let foundedUser = await User.findOne({ facebookId: facebookId})
+      if(foundedUser){ /// yes it exists
+        let userInfo = setUserInfo(foundedUser);
+        sendJSONresponse(res, 200, {
+          token: generateToken(userInfo),
+          user: userInfo
+        });
+        return;
+      }else{ /// if thers no user yet lets save it
+          let user = new User({
+            email: email,
+            facebookId: facebookId,
+            firstName: firstName,
+            lastName: lastName,
+            profilePicture: `https://graph.facebook.com/${facebookId}/picture?type=small`
+          });
+          let createdUser  = await user.save()
+          if(createdUser){                     
+                    let userInfo = setUserInfo(createdUser);
+                    sendJSONresponse(res, 201, {
+                      token: generateToken(userInfo),
+                      user: userInfo
+                    });
+          }else{
+            sendJSONresponse(res, 400, { Error: 'Error while save the Fb User' })   
+          }
+      }    
+} catch (error) {
+  return next(error);
+}
+/*
+  User.findOne({ facebookId: facebookId},(err, existingUser) => {
       if (err) return next(err);
 
       if (existingUser) {
@@ -288,10 +396,12 @@ function facebookLogin(req, res, next) {
           token: generateToken(userInfo),
           user: userInfo
         });
-      });
-    }
-  );
-}
+      });/// save
+    }/// intern findone func
+  );/// find one
+
+  */
+} /// facebookLogin 
 
 
 module.exports = {
