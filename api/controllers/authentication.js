@@ -3,7 +3,7 @@ const jwt = require('jsonwebtoken')
 const User = require('../models/userModel')
 const config = require('../config/config')
 const base64Img = require('base64-img')
-//const boom = require("boom");
+const boom = require("boom");
 const path = require('path')
 
 var sendJSONresponse = function (res, status, content) {
@@ -58,19 +58,12 @@ async function register(req, res, next) {
 
     if (!email || !name || !password)
      {
-      sendJSONresponse(res, 422, {
-        error: 'Es necesario ingresar nombre, email y password'
-      })
-      return
+      throw boom.badData('El email, nombre y password son necesarios')
      }
 
     let userExist = await User.findOne({ email: email });
     if (userExist) {
-      sendJSONresponse(res, 422, {
-        error: 'ese email ya existe',
-        status: false
-      })
-      return
+      throw boom.badData('Ese usuario existe')
     }
     let user = new User({
       email: email,
@@ -110,11 +103,10 @@ function roleAuthorization(role) {
           if(foundedUser.role == role){
             return next();
           }else{
-                sendJSONresponse(res, 401, { error: "No estas autorizado a ver este contenido." });
-                return next("Unauthorized");            
+                throw boom.unauthorized('No estas autorizado a ver este contenido.')       
           }
         }else{
-              sendJSONresponse(res, 422, {error: "No se encontro usuario"});          
+                throw boom.badRequest('No se encontro usuario')          
         }
 /*
         User.findById(user._id, function(err, foundUser) {
@@ -167,16 +159,11 @@ async function forgotPassword(req, res, next) {
                             });
                             next();
             }else{
-                  sendJSONresponse(res, 304,
-                    {
-                      message:
-                      "Error al encontrar y actualizar la password del usuario"
-                    });
-                  next();
+                  throw boom.badRequest('Error al encontrar y actualizar la password del usuario')
             }
         });/// crypto.randomBytes
     }else{
-      sendJSONresponse(res, 422, { error: "No se encontro usuario" });
+      throw boom.badRequest('No se encontro usuario')
     }
   } catch (error) {
     return next(error)
@@ -247,17 +234,11 @@ async function verifyToken(req, res, next) {
             });
             next();
           }else{
-            res.status(304).json({
-              Error:
-                "Error al cambiar la password (update)"
-            });
+          throw  boom.badRequest('Error al cambiar la password (update)')
           }
      }else{
        //  If query returned no results, token expires or was invalid. Return error.
-       res.status(422).json({
-        error:
-          "Tu token ha expirado. Porfavor de resetear la password nuevamente."
-      });
+       throw boom.badData('Tu token ha expirado. Porfavor de resetear la password nuevamente.')
      }
    } catch (error) {
       return next(error)     
@@ -315,25 +296,9 @@ async function facebookLogin(req, res, next) {
   const lastName = req.body.lastName;
   const facebookId = req.body.facebookId;
 
-  if (!email) {
-    sendJSONresponse(res, 422, {
-      message: "email is required"
-    });
-    return;
+  if(!email || !firstName || !lastName || !facebookId){
+    throw boom.badData('El email, nombre y fbID son necesarios')
   }
-  if (!firstName || !lastName) {
-    sendJSONresponse(res, 422, {
-      message: "firstname and lastname are requireds"
-    });
-    return;
-  }
-  if (!facebookId) {
-    sendJSONresponse(res, 422, {
-      message: "facebookId are requireds"
-    });
-    return;
-  }
-
   /// now lets check if the user already exists
 try {
       let foundedUser = await User.findOne({ facebookId: facebookId})
@@ -360,7 +325,7 @@ try {
                       user: userInfo
                     });
           }else{
-            sendJSONresponse(res, 400, { Error: 'Error while save the Fb User' })   
+            throw boom.badRequest('Error while save the Fb User')   
           }
       }    
 } catch (error) {
