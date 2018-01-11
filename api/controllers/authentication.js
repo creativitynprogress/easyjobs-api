@@ -1,6 +1,6 @@
 
 const jwt = require('jsonwebtoken')
-const User = require('../models/userModel')
+const User = require('../models/user')
 const config = require('../config/config')
 const base64Img = require('base64-img')
 const boom = require("boom");
@@ -56,6 +56,7 @@ async function register(req, res, next) {
     const password = req.body.password;
     const role = req.body.role;
 
+    
     if (!email || !name || !password)
      {
       throw boom.badData('El email, nombre y password son necesarios')
@@ -72,7 +73,7 @@ async function register(req, res, next) {
       role: role
     })
 
-    if (req.body.image) {
+    if (req.body.image) {  /// hceck cause payload is to long
       let fileName = Date.now();
       let filepath = base64Img.imgSync(
         req.body.image,
@@ -92,7 +93,7 @@ async function register(req, res, next) {
   }
 }  
 
-//  Role authorization check               FALTA PONERLE EL AWAI
+//  Role authorization check
 function roleAuthorization(role) {
   return async function(req, res, next) {
   
@@ -101,7 +102,7 @@ function roleAuthorization(role) {
       let foundedUser = await User.findById(user._id)
         if(foundedUser){
           if(foundedUser.role == role){
-            return next();
+            return next()
           }else{
                 throw boom.unauthorized('No estas autorizado a ver este contenido.')       
           }
