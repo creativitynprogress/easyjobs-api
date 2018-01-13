@@ -26,6 +26,7 @@ module.exports = (app) => { // declaracion para exportar el modulo
     /// route for fb
 
     api_routes.use('/category', category_routes)
+    category_routes.get('/',require_authentication, category_controller.listCategories)
     category_routes.post('/',require_authentication, category_controller.createCategory)
     category_routes.put('/:categoryId',require_authentication, category_controller.editCategory)
     category_routes.delete('/:categoryId',require_authentication, category_controller.deleteCategory)

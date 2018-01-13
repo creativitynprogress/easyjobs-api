@@ -6,6 +6,20 @@ var sendJSONresponse = function (res, status, content) {
     res.status(status).json(content)
   }
 
+
+  async function listCategories(req,res,next){
+      try {
+          let categories = await Category.find({})
+          if(categories){
+              sendJSONresponse(res,200,{categories})
+          }else{
+              throw boom.badRequest('Error al obtener las categorias, no hay, no existe')
+          }
+      } catch (error) {
+        return next (error)
+      }
+  }
+
   async function createCategory (req, res, next){
      try {
           let usuRole = req.user.role 
@@ -68,6 +82,7 @@ var sendJSONresponse = function (res, status, content) {
   }  
 
   module.exports ={
+    listCategories,
     createCategory,
     editCategory,
     deleteCategory
