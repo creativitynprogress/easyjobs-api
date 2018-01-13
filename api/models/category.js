@@ -3,7 +3,8 @@ const Schema = mongoose.Schema
 
 const categroySchema = new Schema({
     name: {type: String, require: true},
-    subcategory: [{ type: Schema.Types.ObjectId, ref:"subcategory" }]
+    image: { type: String },
+    subcategories: [{ type: Schema.Types.ObjectId, ref:"Subcategory" }]
 })
 
 

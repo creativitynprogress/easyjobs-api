@@ -11,7 +11,8 @@ mongoose.Promise = global.Promise;
 mongoose.connect("mongodb://localhost:27017/easyjobsapi"); 
 
 app.use(bodyParser.urlencoded({extended:true}))
-app.use(bodyParser.json())
+//app.use(bodyParser.json())
+app.use(bodyParser.json({ 'type': '*/*',limit: '20mb' }));
 app.use(logger('dev'))
 
 let routes = require("./api/routes/index")
