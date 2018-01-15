@@ -64,7 +64,7 @@ async function register(req, res, next) {
 
     let userExist = await User.findOne({ email: email });
     if (userExist) {
-      throw boom.badData('Ese usuario existe')
+      throw boom.badData('Ese email ya existe')
     }
     let user = new User({
       email: email,
