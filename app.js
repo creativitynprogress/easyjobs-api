@@ -8,10 +8,10 @@ const logger = require('morgan')
 const boom = require('boom')
 
 mongoose.Promise = global.Promise;
-mongoose.connect("mongodb://localhost:27017/easyjobsapi"); 
+mongoose.connect("mongodb://localhost:27017/easyjobsapi", { useMongoClient: true }); 
 
 app.use(bodyParser.urlencoded({extended:true}))
-//app.use(bodyParser.json())
+//app.use(bodyParser.json())1405
 app.use(bodyParser.json({ 'type': '*/*',limit: '20mb' }));
 app.use(logger('dev'))
 

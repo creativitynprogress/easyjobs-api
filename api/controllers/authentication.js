@@ -5,10 +5,7 @@ const config = require('../config/config')
 const base64Img = require('base64-img')
 const boom = require("boom");
 const path = require('path')
-
-var sendJSONresponse = function (res, status, content) {
-  res.status(status).json(content)
-}
+const sendJSONresponse = require('./shared')
 
 //  Generate jwt
 function generateToken(user) {
@@ -23,7 +20,7 @@ function generateToken(user) {
     role: user.role,
     name: user.name, 
     fbId: user.fbId,
-    profilePicture: user.profilePicture
+    image: user.image
   }
 
   return getUserInfo

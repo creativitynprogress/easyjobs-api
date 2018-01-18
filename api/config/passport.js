@@ -8,7 +8,8 @@ const LocalStrategy = require('passport-local')
 //  Setting username field to email rather than username
 const localOptions = {
     usernameField: 'email',
-    passwordField: 'password'
+    passwordField: 'password' 
+    //// Role
   }
   
   // Setting up local login Strategy

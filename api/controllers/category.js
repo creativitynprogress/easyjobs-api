@@ -1,20 +1,16 @@
 const Category = require('../models/category')
 const config = require('../config/config')
-const boom = require("boom");
+const boom = require("boom")
+const base64Img = require('base64-img')
+const path = require('path')
+const sendJSONresponse = require('./shared')
 
-var sendJSONresponse = function (res, status, content) {
-    res.status(status).json(content)
-  }
 
 
   async function listCategories(req,res,next){
       try {
           let categories = await Category.find({})
-          if(categories){
-              sendJSONresponse(res,200,{categories})
-          }else{
-              throw boom.badRequest('Error al obtener las categorias, no hay, no existe')
-          }
+          sendJSONresponse(res,200,categories)
       } catch (error) {
         return next (error)
       }
@@ -22,21 +18,28 @@ var sendJSONresponse = function (res, status, content) {
 
   async function createCategory (req, res, next){
      try {
-          let usuRole = req.user.role 
-
-          if(usuRole !== 'Admin'){ /// check if reciebe the role 
-              throw boom.unauthorized('No tienes los provilegios para acceder a esto') /// no lo saca
-          }else{
-              //// falta validar que no se repitan  los nombres de caricaturas
-              let newCategory = new Category(req.body) 
-              let createdCategory = await newCategory.save()
-              if(createdCategory){
-                  sendJSONresponse(res,201, {category: createdCategory})
-              }else{
-                  throw boom.badData('Bad body')
-              }
-          }
-
+            const name = req.body.name
+            const subcategories = req.body.subcategories
+            if (!name) /// subcategories too
+            {
+             throw boom.badRequest('El nombre es necesario')
+            }
+           let category = new Category({
+             name: name,
+             subcategories: subcategories,
+           })
+           if (req.body.image) {  
+            let fileName = Date.now();
+            let filepath = base64Img.imgSync(
+              req.body.image,
+              path.join("/public/images", "category"),
+              fileName
+            );
+            category.image = "/images/category/" + fileName + path.extname(filepath);
+          }          
+          category = await category.save()
+          sendJSONresponse(res,201, category)
+             
      } catch (error) {
          return next (error)
      }
@@ -44,18 +47,10 @@ var sendJSONresponse = function (res, status, content) {
 
   async function editCategory (req, res, next){
    try {
-    let usuRole = req.user.role 
-    
-    if(usuRole !== 'Admin'){ /// check if reciebe the role 
-        throw boom.unauthorized('No tienes los provilegios para acceder a esto')
-    }else{
+    //// modify imgae
         let updatedCategory = await Category.findByIdAndUpdate(req.params.categoryId, req.body, {new: true})
-        if(updatedCategory){
-            sendJSONresponse(res,200, {updatedCategory})
-        }else{
-            throw boom.badRequest('Bad body')
-        }
-    }
+        sendJSONresponse(res,200, updatedCategory)
+    
    } catch (error) {
        return next(error)
    }
@@ -64,18 +59,8 @@ var sendJSONresponse = function (res, status, content) {
 
   async function deleteCategory (req, res, next){
     try {
-        let usuRole = req.user.role 
-        
-        if(usuRole !== 'Admin'){ /// check if reciebe the role 
-            throw boom.unauthorized('No tienes los provilegios para acceder a esto')
-        }else{
-            let removedCategory = await Category.findByIdAndUpdate(req.params.categoryId)
-            if(removedCategory){
-                sendJSONresponse(res,200,{msg: "Categoria eliminada exitosamente prro"})
-            }else{
-                throw boom.badRequest('Error al eliminar categoria, no se encontro esa categoria')
-            }
-        }
+            let removedCategory = await Category.findByIdAndRemove(req.params.categoryId)
+            sendJSONresponse(res,200,removedCategory)
     } catch (error) {
         return next(error)
     }
