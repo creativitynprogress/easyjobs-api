@@ -8,12 +8,11 @@ const sendJSONresponse = require('./shared')
 
 
 
-async function listSubCategories(req,res,next){
-    let urlParts = req.baseUrl.split("/")
+async function listSubCategories(req,res,next){   
     try {
-        let categories = await Category.findById(urlParts[3])
-        let subcategoriesList = categories.subcategories
-        sendJSONresponse(res,200,subcategoriesList)   
+        let categoryId = req.params.categoryId
+        let subCategories = await Subcategory.find({category: categoryId})
+        sendJSONresponse(res,200,subCategories)
     } catch (error) {
       return next (error)
     }
@@ -23,6 +22,7 @@ async function listSubCategories(req,res,next){
 async function createSubCategory (req, res, next){
    try {
         let newSubcategory = new Subcategory(req.body)
+        newSubcategory.category = req.params.categoryId
         let createdSubCategory = await newSubcategory.save()
         sendJSONresponse(res,200,createdSubCategory)
    } catch (error) {

@@ -3,9 +3,9 @@ const Schema = mongoose.Schema
 
 
 const subcategroySchema = new Schema({
-    name:{type: String, require: true},
-    activities: [ {type: String} ]
+    category: {type: Schema.Types.ObjectId, ref:"Category"},
+    name:{type: String, require: true}
 })
-
+//subc.activities.push()
 
 module.exports = mongoose.model('Subcategory', subcategroySchema)

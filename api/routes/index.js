@@ -4,6 +4,7 @@ module.exports = (app) => { // declaracion para exportar el modulo
     require('../config/passport')
     const category_controller = require('../controllers/category')
     const subcategory_controller = require('../controllers/subCategory')
+    const activity_controller = require('../controllers/activity')
     const authentication_controller = require ('../controllers/authentication');
     const boom = require("boom")
 
@@ -20,6 +21,7 @@ module.exports = (app) => { // declaracion para exportar el modulo
     const auth_routes = express.Router()
     const category_routes = express.Router()
     const subcategory_routes = express.Router()
+    const activity_routes = express.Router()
     ///Routes
 
     api_routes.use('/auth', auth_routes)
@@ -35,11 +37,17 @@ module.exports = (app) => { // declaracion para exportar el modulo
         category_routes.delete('/:categoryId',require_authentication,authentication_controller.roleAuthorization('Admin'), category_controller.deleteCategory)
 
     api_routes.use('/category/:categoryId/subcategory',subcategory_routes)
-        subcategory_routes.get('/',require_authentication,subcategory_controller.listSubCategories)
+        subcategory_routes.get('/:categoryId',require_authentication,subcategory_controller.listSubCategories)
         subcategory_routes.post('/',require_authentication,authentication_controller.roleAuthorization('Admin'),subcategory_controller.createSubCategory)
         subcategory_routes.put('/:subcategoryId',require_authentication,authentication_controller.roleAuthorization('Admin'),subcategory_controller.editSubCategory)
         subcategory_routes.delete('/:subcategoryId',require_authentication,authentication_controller.roleAuthorization('Admin'),subcategory_controller.deleteSubCategory)
-
+ 
+    api_routes.use('/category/:categoryId/subcategory/:subcategoryId/activity',activity_routes)
+        activity_routes.get('/:subcategoryId',require_authentication,activity_controller.listActivity)
+        activity_routes.post('/',require_authentication,authentication_controller.roleAuthorization('Admin'),activity_controller.createActivity)
+        activity_routes.put('/:activityId',require_authentication,authentication_controller.roleAuthorization('Admin'),activity_controller.editActivity)
+        activity_routes.delete('/:activityId',require_authentication,authentication_controller.roleAuthorization('Admin'),activity_controller.deleteActivity)
+        
 
     app.use ('/api', api_routes)    // Cuando se llega aqui se usa la ruta /API y la funcion apiroutes que es esta
 }// end module.exports
